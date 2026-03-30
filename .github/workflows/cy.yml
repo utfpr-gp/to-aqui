@@ -1,9 +1,12 @@
 name: CI - Validação do Monorepo
 
 # 1. Quando este robô deve ser ativado?
+# 1. Quando este robô deve ser ativado?
 on:
   pull_request:
     branches: [ "develop", "main" ]
+  push:
+    branches: [ "develop", "main" ] # <-- Captura o Merge final para validação!
 
 # 2. O que ele deve fazer?
 jobs:

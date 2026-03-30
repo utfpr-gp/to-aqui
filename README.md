@@ -1,4 +1,10 @@
 # 📍 Tô Aqui!
+# Nome do Seu Projeto
+
+**Status do Sistema:**
+[![CI - Develop (Laboratório)](https://github.com/utfpr-gp/to-aqui/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/utfpr-gp/to-aqui/actions/workflows/ci.yml)
+[![CI - Main (Produção)](https://github.com/utfpr-gp/to-aqui/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/utfpr-gp/to-aqui/actions/workflows/ci.yml)
+
 
 🔗 **Link em Produção:** [Aguardando Deploy na Nuvem]
 👨‍💻 **Autores:** [Nome do Aluno A, Nome do Aluno B, Nome do Aluno C]
