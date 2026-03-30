@@ -47,8 +47,8 @@ jobs:
           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/to_aqui_db_test?schema=public"
         run: |
           cd apps/api
-          npx prisma generate
-          npx prisma migrate deploy
+          npm run prisma:generate -w apps/api
+          npm run prisma:deploy -w apps/api
 
       # O comando de teste usa a flag -w para testar a API diretamente pela raiz
       - name: 🔍 Rodar Testes (Backend)
