@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma" // mantido da configuração original
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  PROFESSOR
+  STUDENT
+  ADMIN
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  ra        String   @unique
+  role      Role
+  createdAt DateTime @default(now())
+
+  // Relations
+  courses     Course[]     @relation("CourseProfessor")
+  enrollments Enrollment[]
+  attendances Attendance[]
+
+  @@map("users")
+}
+
+model Course {
+  id          String @id @default(uuid())
+  name        String
+  code        String
+  professorId String
+
+  // Relations
+  professor   User         @relation("CourseProfessor", fields: [professorId], references: [id])
+  enrollments Enrollment[]
+  sessions    Session[]
+
+  @@map("courses")
+}
+
+model Enrollment {
+  id           String  @id @default(uuid())
+  courseId     String
+  studentEmail String
+  studentId    String?
+
+  // Relations
+  course  Course @relation(fields: [courseId], references: [id])
+  student User?  @relation(fields: [studentId], references: [id])
+
+  @@map("enrollments")
+}
+
+model Session {
+  id        String    @id @default(uuid())
+  courseId  String
+  startTime DateTime
+  endTime   DateTime?
+  isActive  Boolean   @default(true)
+
+  // Relations
+  course      Course       @relation(fields: [courseId], references: [id])
+  attendances Attendance[]
+
+  @@map("sessions")
+}
+
+model Attendance {
+  id        String   @id @default(uuid())
+  sessionId String
+  studentId String
+  timestamp DateTime @default(now())
+  isManual  Boolean  @default(false)
+
+  // Relations
+  session Session @relation(fields: [sessionId], references: [id])
+  student User    @relation(fields: [studentId], references: [id])
+
+  @@map("attendances")
+}
