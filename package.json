@@ -1,0 +1,20 @@
+{
+    "name": "to-aqui-monorepo",
+    "version": "1.0.0",
+    "description": "Monorepo do projeto Tô Aqui!",
+    "private": true,
+    "workspaces": [
+        "apps/*"
+    ],
+    "scripts": {
+        "dev:api": "npm run start:dev -w apps/api",
+        "dev:web": "npm run start -w apps/web"
+    },
+    "keywords": [
+        "nestjs",
+        "angular",
+        "monorepo"
+    ],
+    "author": "Roni Fabio Banaszewski",
+    "license": "UNLICENSED"
+}
