@@ -140,3 +140,8 @@ vite.config.ts.timestamp-*
 
 # Pastas do Docker e Banco de Dados Local
 postgres_data/
+
+.gsd
+.bg-shell/
+.roo-code/
+.cline/
