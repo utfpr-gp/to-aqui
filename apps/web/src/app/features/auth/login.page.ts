@@ -1,4 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
+import { AuthStore } from '../../core/stores/auth.store';
+
+declare const google: any;
 
 @Component({
   selector: 'app-login-page',
@@ -134,12 +137,15 @@ import { Component, signal } from '@angular/core';
   `]
 })
 export class LoginPage {
-  readonly isLoading = signal(false);
-  readonly errorMessage = signal<string | null>(null);
+  private readonly authStore = inject(AuthStore);
+
+  readonly isLoading = this.authStore.isLoading;
+  readonly errorMessage = this.authStore.error;
 
   onGoogleLogin(): void {
-    // Will be wired to AuthStore in Phase 4
-    this.isLoading.set(true);
-    this.errorMessage.set(null);
+    // TODO: Replace with real Google Sign-In flow
+    // For now, this is a placeholder that will be wired to Google Identity Services
+    this.authStore.login('placeholder-id-token');
   }
 }
+
