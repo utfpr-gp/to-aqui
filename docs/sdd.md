@@ -28,11 +28,16 @@ O projeto utiliza uma arquitetura de Monorepo. O Agente de IA deve respeitar a s
 
 ### Core & Infraestrutura
 * **Ambiente:** Node.js v20.x LTS.
-* **Banco de Dados:** PostgreSQL 16 (Hospedado no Neon.tech).
+* **Banco de Dados:** PostgreSQL 16 (Desenvolvimento local isolado via Docker Compose; Produção em alta disponibilidade via Neon.tech).
 * **Backend:** NestJS v10.x.
 * **Frontend:** Angular v17+ (Obrigatório o uso da nova Control Flow `@if`, `@for` e configuração estrita com `Standalone Components`. O uso de `NgModule` está proibido).
 * **ORM:** Prisma v5.x (Interface oficial com o banco de dados).
 * **Testes:** `jest` e `supertest` (Obrigatório seguir o padrão oficial do NestJS para testes unitários e E2E. Proibido o uso de Vitest, Mocha ou qualquer outro test runner).
+
+### UI & Estilização (Frontend)
+* **Design System:** Spartan UI (Obrigatório o uso dos componentes primitivos `@spartan-ng/ui-hlm` e `ui-brain` em vez de criar elementos HTML nativos do zero).
+* **CSS Framework:** TailwindCSS. É estritamente proibido o uso de arquivos `.css` ou `.scss` isolados para estilização; tudo deve ser resolvido via classes utilitárias do Tailwind no HTML.
+* **Ícones:** Lucide Angular (via `@spartan-ng/ui-icon-brain`).
 
 ### Bibliotecas e Utilitários Permitidos
 * **WebSockets:** Socket.io v4.x (integrado via `@nestjs/platform-socket.io` v10.x).
@@ -105,6 +110,13 @@ erDiagram
     }
 ```
 
+### 🗄️ 4.3. Regras de Migração e Operações Seguras (Zero-Downtime)
+> **Instrução Crítica para a IA:** O ecossistema possui dualidade (Docker local / Neon produção). No entanto, como as migrações geradas localmente (`.sql`) serão executadas no Neon posteriormente, as regras de segurança aplicam-se já no ambiente de desenvolvimento.
+
+* **Paridade de Ambiente:** Todas as criações de migração (`prisma migrate dev`) e testes DEVEM ocorrer contra o Docker local.
+* **Proibição Destrutiva (Prevenção de Deploy):** É terminantemente proibido gerar migrações do Prisma que contenham operações destrutivas (`DROP TABLE`, `DROP COLUMN`, ou `ALTER COLUMN TYPE`). Se a IA gerar um arquivo `.sql` destrutivo localmente, ele destruirá dados no Neon durante o deploy.
+* **Evolução de Esquema:** Qualquer alteração estrutural que exija renomear ou deletar campos deve utilizar o padrão *Expand and Contract* (criar a nova coluna, permitir nulos temporariamente e manter a antiga intacta no Schema).
+
 ## 📑 5. Contratos Globais (DTOs & Interfaces)
 > Tipagem TypeScript para validação de entrada (Request) e saída (Response).
 
@@ -132,6 +144,12 @@ erDiagram
 | `AuthService` | Validar e-mail institucional e emitir Tokens de Acesso. |
 | `QrTokenService` | Assinar e verificar tokens JWT efêmeros para o QR Code (Segurança). |
 
+### 📂 6.3. Estrutura de Diretórios Frontend (Angular)
+> **Instrução para a IA:** Organize a pasta `apps/web/src/app` utilizando a arquitetura focada em features:
+
+* **`core/`**: Interceptors, Guards (`AuthGuard`), e serviços singleton essenciais (ex: `AuthService`).
+* **`shared/`**: Componentes burros (UI/Spartan), pipes e diretivas reaproveitáveis.
+* **`features/`**: Módulos lógicos isolados (ex: `check-in/`, `dashboard/`, `roster/`). Cada feature deve conter suas próprias páginas, componentes visuais e `SignalStores` locais.
 
 ## 🛡️ 7. Segurança (API Protection)
 > Políticas de acesso e integridade dos dados no nível do servidor.
@@ -150,42 +168,67 @@ erDiagram
   }
 
 
-## 📡 8. Contratos de API (Especificação OpenAPI)
+## 📡 8. Padrões e Design de API (REST Guidelines)
+> **Instrução para a IA:** Ao projetar novos contratos de API (Rotas e Payloads) nas especificações de Issues, você DEVE seguir rigorosamente os padrões abaixo.
 
-> **Instrução para a IA:** Implemente os Controllers e DTOs seguindo rigorosamente estas definições.
+### 8.1. Nomenclatura e Arquitetura REST
+* **Pluralização:** Todos os recursos devem ser nomeados no plural (ex: `/users`, `/sessions`, `/courses`).
+* **Sub-recursos:** Para ações aninhadas, utilize hierarquia clara (ex: `/courses/:id/enrollments` e não `/enrollments/course/:id`).
+* **Ações (Verbos):** Se uma rota não for um CRUD básico, mas sim uma ação (ex: check-in, aprovação), o verbo deve vir no final da URL após o recurso pai (ex: `POST /attendance/check-in`, `POST /sessions/:id/generate-qr`).
 
-### 🔐 Módulo de Autenticação (Google OAuth2)
-* **POST** `/auth/google`
-    * **Payload:** `{ "idToken": "string" }`
-    * **Regra:** Buscar o e-mail na tabela `Enrollment`. Se não existir em nenhuma pauta, retornar `403 Forbidden`. Se existir, atrelar o `studentId` à matrícula e retornar os tokens.
-    * **Retorno:** `{ "accessToken": "string", "user": { "id", "ra", "role", "name" } }`
+### 8.2. Padronização de Payloads e Respostas
+* **Payloads de Criação (POST/PUT):** Os DTOs devem utilizar *camelCase* estrito. É proibido aninhar dados desnecessariamente se uma estrutura *flat* for suficiente.
+* **Respostas de Sucesso (200/201):**
+    * Operações de criação (`POST`) devem retornar código `201 Created` contendo o objeto criado na íntegra.
+    * Consultas (`GET`) de listagem devem sempre prever e retornar um array (mesmo que vazio `[]`).
+* **Metadados:** Listagens que não possuírem paginação explícita devem retornar o array diretamente. Se houver paginação, devem retornar no formato: `{ "data": [], "meta": { "total", "page" } }`.
 
-### 📚 Módulo de Disciplinas e Pautas (Professores)
-* **POST** `/courses/:id/roster`
-    * **Payload:** `[{ "name": "string", "ra": "string", "email": "string" }]`
-    * **Lógica:** O professor envia o JSON extraído da pauta. O sistema insere os registros na tabela `Enrollment` atrelados a esta disciplina (US02b).
+### 8.3. Segurança na Camada de Rota
+* Toda rota que muta dados (POST, PUT, DELETE, PATCH) relacionada a configuração de sessão ou pauta (ex: `/sessions`) exige obrigatoriamente autenticação JWT e validação de permissão (`Role = Professor`).
+* Apenas rotas públicas ou de autenticação (ex: `/auth/google`) e a rota de validação de QR Code pelo aluno podem operar sem permissão de `Professor`.
 
-### 📅 Módulo de Sessões (Exclusivo Professor)
-* **POST** `/sessions`
-    * **Payload:** `{ "courseId": "string", "durationMinutes": 110 }`
-* **GET** `/sessions/:id/qr-payload`
-    * **Lógica:** Gerar um JWT efêmero (15s) assinado contendo o `sessionId`.
+### 8.4. Concorrência e Idempotência (Operações Críticas)
+* Todas as rotas de mutação de estado (especialmente o registro de presença em `/attendance/check-in`) DEVEM ser tratadas de forma idempotente.
+* **Camada de Dados:** O banco deve possuir *Unique Constraints* compostas (ex: `@@unique([sessionId, studentId])` no Prisma) para impedir inserções duplas.
+* **Tratamento de Exceção:** O backend (NestJS) DEVE capturar exceções de violação de Unique Key (código `P2002` do Prisma) e tratá-las graciosamente. Em caso de presença duplicada, o sistema deve retornar um HTTP 200 silencioso ou um HTTP 409 (Conflict) com mensagem clara ("Presença já confirmada"), nunca um erro 500 (Internal Server Error).
 
-### 🖋️ Módulo de Presença
-* **POST** `/attendance/check-in` (Via App do Aluno)
-    * **Payload:** `{ "qrToken": "string" }`
-    * **Validação:** Verificar assinatura do token (15s) e impedir duplicidade na mesma sessão.
-* **POST** `/attendance/manual` (Exclusivo Professor - US08)
-    * **Payload:** `{ "sessionId": "string", "studentId": "string" }`
-    * **Lógica:** Registra a presença forçando a coluna `isManual = true`.
-    
 ## ⚙️ 9. Contrato de Configuração (Environment)
-> **Instrução Crítica para a IA:** Nenhum dado sensível ou configurável deve estar *hardcoded*. Utilize o `@nestjs/config` (`ConfigModule`) para carregar e validar as variáveis em tempo de inicialização.
+> **Instrução Crítica para a IA:** Nenhum dado sensível, URL externa ou chave secreta deve estar *hardcoded* no código-fonte. O gerenciamento de ambiente é rigorosamente dividido entre Backend e Frontend.
 
-As seguintes variáveis são o contrato obrigatório para o arquivo `.env`:
-* `DATABASE_URL` = String de conexão do PostgreSQL (Neon.tech).
+### 9.1. Backend (NestJS)
+Utilize obrigatoriamente o `@nestjs/config` (`ConfigModule`).
+* **Validação Rigorosa:** É OBRIGATÓRIO implementar a validação de esquema no carregamento do módulo (utilizando `class-validator` e `class-transformer` em uma classe `EnvironmentVariables`). O servidor NÃO PODE iniciar se uma variável obrigatória estiver faltando.
+* **Tipagem:** Utilize o `ConfigService` sempre tipado para garantir o autocompletar e a segurança do compilador.
+
+**Contrato Base de Variáveis (.env):**
+* `DATABASE_URL` = String de conexão do PostgreSQL. No ambiente local, o Agente DEVE assumir a URL do contêiner Docker (ex: `postgresql://usuario:senha@localhost:5432/nome_do_banco`). Em produção, a plataforma injetará a string do Neon.tech. O código deve ser agnóstico a essa mudança.
 * `JWT_SECRET` = Chave para assinar o token de sessão de usuário.
-* `JWT_EXPIRES_IN` = Tempo de expiração da sessão (ex: `8h`).
+* `JWT_EXPIRES_IN` = Tempo de expiração da sessão (ex: `8h`, `7d`).
 * `QR_SECRET` = Chave isolada e exclusiva para assinar o token efêmero do QR Code.
-* `GOOGLE_CLIENT_ID` = ID do Client OAuth para validação segura do token de login.
+* `GOOGLE_CLIENT_ID` = ID do Client OAuth (Usado para validar o token no backend).
 
+### 9.2. Frontend (Angular)
+Utilize a estrutura nativa de `environments` do Angular (`environment.ts` e `environment.development.ts`).
+* Nenhum Service Angular pode ter a URL da API *hardcoded* (ex: `http://localhost:3000/api`).
+* **Contrato Base de Variáveis (Angular):**
+    * `apiUrl` = A base URL do Backend NestJS.
+    * `googleClientId` = O ID público do OAuth para renderizar o botão de login do Google.
+
+## 🧩 10. Padrões Globais de Frontend (Angular)
+
+### 10.1. Gerenciamento de Estado
+* **Local State:** Utilizar exclusivamente **Signals** (`signal`, `computed`, `effect`) para estados confinados ao componente. Proibido o uso de `BehaviorSubject` para estados locais de UI.
+* **Global State:** Para dados compartilhados (ex: Perfil do Usuário Logado, Sessão Ativa), utilizar o **NgRx SignalStore** (arquitetura leve e moderna).
+
+### 10.2. Tratamento de Erros e UI Transitória
+> **Instrução para a IA:** O Agente de UI nunca deve ignorar falhas da API.
+* **Loading States:** Toda chamada HTTP deve acionar um `Skeleton` ou `Spinner` do Spartan desabilitando o botão de ação para evitar concorrência.
+* **Global HTTP Interceptor:** O Frontend possui um Interceptor global. A IA não precisa anexar o Token JWT manualmente em cada requisição; o interceptor faz isso.
+* **Error Handling:** Erros 4xx e 5xx da API (formatados no padrão NestJS da Seção 7) devem ser capturados e exibidos utilizando o componente global de **Toast** ou **Alert** do Spartan. Se o erro for `401 Unauthorized`, a Store deve limpar os dados e forçar o redirecionamento para o login.
+
+## 🧪 11. Padrões de Qualidade e Testes (TDD)
+> **Instrução para a IA:** Os testes automatizados são a garantia de funcionamento da linha de montagem. Testes vazios ou puramente sintáticos serão rejeitados.
+
+* **Proibição de Testes "Ocos":** É proibido aprovar testes que apenas verifiquem se um *Mock* foi chamado (ex: `expect(mock).toHaveBeenCalled()`) sem validar a mudança de estado real do sistema.
+* **Backend (NestJS):** Os testes de Controllers e Services devem validar o fluxo de dados, exceções lançadas (ex: `HttpException`) e o payload exato de retorno mapeado no DTO. Sempre que possível, utilize banco de dados em memória ou mocks estritos que simulem as restrições do Prisma.
+* **Frontend (Angular):** Testes de componente não devem focar apenas em métodos de classe TypeScript. Devem testar as interações do DOM (ex: simular clique no botão de gerar QR Code e verificar se o componente do Spartan acionou o estado de *Loading* no HTML).
