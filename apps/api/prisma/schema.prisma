@@ -20,7 +20,7 @@ model User {
   id        String   @id @default(uuid())
   email     String   @unique
   name      String
-  ra        String   @unique
+  ra        String?  @unique
   role      Role
   createdAt DateTime @default(now())
 
@@ -56,6 +56,8 @@ model Enrollment {
   course  Course @relation(fields: [courseId], references: [id])
   student User?  @relation(fields: [studentId], references: [id])
 
+  @@unique([courseId, studentEmail])
+  @@index([studentEmail])
   @@map("enrollments")
 }
 
