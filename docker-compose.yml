@@ -3,12 +3,12 @@ version: '3.8'
 services:
   db:
     image: postgres:16
-    container_name: to_aqui_db
+    container_name: to_aqui
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: meu_projeto_db
+      POSTGRES_DB: to_aqui_db
     ports:
       - '5432:5432'
     volumes:
