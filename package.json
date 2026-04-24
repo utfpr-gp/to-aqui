@@ -4,11 +4,13 @@
     "description": "Monorepo do projeto Tô Aqui!",
     "private": true,
     "workspaces": [
-        "apps/*"
+        "apps/*",
+        "libs/*"
     ],
     "scripts": {
         "dev:api": "npm run start:dev -w apps/api",
-        "dev:web": "npm run start -w apps/web"
+        "dev:web": "npm run start -w apps/web",
+        "format": "prettier --write \"**/*.{ts,js,json,css,scss,md}\""
     },
     "keywords": [
         "nestjs",
@@ -16,5 +18,10 @@
         "monorepo"
     ],
     "author": "Roni Fabio Banaszewski",
-    "license": "UNLICENSED"
+    "license": "UNLICENSED",
+    "devDependencies": {
+        "class-transformer": "^0.5.1",
+        "class-validator": "^0.15.1",
+        "prettier": "^3.8.3"
+    }
 }

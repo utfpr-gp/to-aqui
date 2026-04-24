@@ -16,6 +16,10 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsNotEmpty()
+  QR_SECRET: string;
+
+  @IsString()
+  @IsNotEmpty()
   GOOGLE_CLIENT_ID: string;
 }
 
