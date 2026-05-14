@@ -24,7 +24,11 @@ O registro de presença manual em sala de aula consome tempo e é suscetível a 
 
 ## 📝 4. Escopo Funcional, Histórias de Usuário e Critérios de Aceitação (MoSCoW)
 
-> **Instrução para a IA/Desenvolvedor:** Cada bloco abaixo representa uma necessidade de negócio. Uma história só é considerada "Done" quando todos os seus critérios de aceitação forem atendidos no sistema.
+> **Legenda de Status (Ciclo de Vida da História):**
+> * ⚪ **[Draft]**: Ideia em rascunho. As regras ainda estão sendo escritas. **(Não codificar)**
+> * 🟡 **[Ready]**: Regras de negócio definidas e aprovadas. Pronto para o Kanban.
+> * 🟢 **[Live]**: Funcionalidade desenvolvida, testada e em produção.
+> * 🔴 **[Deprecated]**: Funcionalidade removida ou substituída.
 
 ### 🔴 US01 - Autenticação por E-mail Validado na Pauta (Must Have)
 **Ator:** Todos | **História:** Como usuário, quero fazer login via Google Auth para que o sistema confirme minha identidade cruzando meu e-mail com a pauta oficial da disciplina.
